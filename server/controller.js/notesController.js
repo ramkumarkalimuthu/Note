@@ -183,5 +183,54 @@ const unlikeNote = async (req, res) => {
 
 };  
 
+const dashboard = async (req, res) => {
+    try {
+       const userId = req.user.userId; // Assuming the user ID is stored in the token payload
+       console.log('Dashboard User ID:', userId); // Log the user ID to the console for debugging
 
-module.exports = { createNote, getAllNotes, updateNote, deleteNote, disableNote, enableNote, likeNote, unlikeNote};
+const [[totalNotes]] = await db.query(
+            `SELECT COUNT(*) AS total_notes
+             FROM notes
+             WHERE user_id = ?`,
+            [userId]
+        );           
+        const [[activeNotes]] = await db.query(
+            `SELECT COUNT(*) AS active_notes
+             FROM notes
+             WHERE user_id = ? AND status = 1`,
+            [userId]
+        );
+
+        const [[inactiveNotes]] = await db.query(
+            `SELECT COUNT(*) AS inactive_notes
+             FROM notes
+             WHERE user_id = ? AND status = 0`,
+            [userId]
+        );
+
+        const [[totalLikes]] = await db.query(
+            `SELECT COUNT(nl.id) AS total_likes
+             FROM note_likes nl
+             JOIN notes n
+                ON nl.note_id = n.note_id
+             WHERE n.user_id = ?`,
+            [userId]
+        );
+
+        console.log('Dashboard Notes:', {  total_notes: totalNotes.total_notes, active_notes: activeNotes.active_notes, inactive_notes: inactiveNotes.inactive_notes, total_likes: totalLikes.total_likes }); // Log the notes to the console for debugging
+
+        res.status(200).json({  total_notes: totalNotes.total_notes, active_notes: activeNotes.active_notes, inactive_notes: inactiveNotes.inactive_notes, total_likes: totalLikes.total_likes });
+
+    }   
+
+       
+    
+    catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }   
+};
+
+module.exports = { createNote, getAllNotes, updateNote, deleteNote, disableNote, enableNote, likeNote, unlikeNote, dashboard };
+
+
+
